@@ -44,7 +44,9 @@
 enum responseCodes canfr_canrecvStart(busInterface itfName);
 enum responseCodes canfr_canrecvResetClock(void);
 enum responseCodes canfr_canrecvStop(void);
+int getVelocity(void);
 enum responseCodes canfr_canSetBuffer(busInterface itfName, RT_QUEUE* bufferPtr);
+
 
 
 #endif

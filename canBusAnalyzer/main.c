@@ -53,6 +53,7 @@ int tcpserver()
 	int server_fd, client_fd, err;
 	struct sockaddr_in server, client;
 	unsigned char buf[MAX_RX_BUFFER_SIZE];
+	double velocity;
 	//struct hostent *hostp; /* client host info */
 	//canfrControlFrameStruct_t currentCtrl;
 	//enum responseCodes responseCode;
@@ -95,15 +96,14 @@ int tcpserver()
 		/* 
 	     * read: read input string from the client
 	     */
+		rt_printf("get command!!");
 	    bzero(buf, MAX_RX_BUFFER_SIZE);
 	    int rNum = read(client_fd, buf, MAX_RX_BUFFER_SIZE);
 	    if (rNum < 0) 
 	      error("ERROR reading from socket");
 
-	  	rt_printf("printt %d \n", rNum);
-	  	rt_printf("printt %s \n", buf);
-	    rt_printf("server received %d bytes: %s", rNum, buf);
-
+	  	velocity = getVelocity();
+	  	snprintf(buf, MAX_RX_BUFFER_SIZE, "velocity = %lf",velocity);
 	     /* 
 	     * write: echo the input string back to the client 
 	     */
@@ -112,6 +112,7 @@ int tcpserver()
 	      error("ERROR writing to socket");
 
 	    close(client_fd);
+	    rt_printf("finnish command");
 	}
 	
 

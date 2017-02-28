@@ -27,9 +27,10 @@
 
 
 #define MAX_MESSAGE_LENGTH 40
+#define SEM_INIT 1       /* Initial semaphore count */
+#define SEM_MODE S_FIFO  /* Wait by FIFO order */
 
-
-
+RT_SEM sem_desc;
 //RT_TASK task_struct[NTASKS];
 
 RT_TASK rtcan0MsgRecv_task;
@@ -45,6 +46,7 @@ static int rtcan0_socket = -1;
 static int rtcan1_socket = -1;
 struct sockaddr_can rtcan0Recv_addr;
 struct sockaddr_can rtcan1Recv_addr;
+double velocity=0;
 
 static int cleanup(void)
 {
@@ -112,6 +114,7 @@ static void rtcan0MsgRecv_func(void *arg)
     struct iovec iov;
     canRxStruct rxCan0Msg;
 	int retval = 0;
+	
 	nanosecs_abs_t timestamp = 0;
 	// unsigned char packet[32];
 
@@ -205,14 +208,20 @@ static void rtcan0MsgRecv_func(void *arg)
 		 	rxCan0Msg.timestamp 	= timestamp - startTime;
 		 	rxCan0Msg.msgFlag 		= msgFlag;
 
-		 	if(rxCan0Msg.can_id == 215)
+		 	if(rxCan0Msg.can_id == 0x215)
 		 	{
-		 		UINT32 velocity = rxCan0Msg.data[0] + rxCan0Msg.data[1]*256;
+		 		/* Now, wait for a semaphore unit... */
+        		rt_sem_p(&sem_desc,TM_INFINITE);
+		 		 velocity = rxCan0Msg.data[0] | rxCan0Msg.data[0]<<8;
+		 		/* then release it. */
+        		rt_sem_v(&sem_desc);
+
+		 		//velocity = 
 		 		velocity = velocity * 0.0078125;
-		 		rt_printf("velocity = %f",velocity);
+		 		rt_printf("data0: %d data1: %02x velocity = %lf",rxCan0Msg.data[0],rxCan0Msg.data[1],velocity);
 		 		
 		 	}
-		 	rt_printf("size of logMsg = %d\n", sizeof(rxCan0Msg));
+		 	rt_printf("size of logMsg = %d\n canID = %04x \n", sizeof(rxCan0Msg),rxCan0Msg.can_id);
 		 	//rt_printf("put the message at this queue address %d \n",rtcan0BufferPrt);
 			//retval = rt_queue_write(rtcan0BufferPrt,&rxCan0Msg,sizeof(rxCan0Msg),Q_NORMAL);
 
@@ -334,15 +343,22 @@ static void rtcan1MsgRecv_func(void *arg)
 
 		 	if(print_canrecv)
 		 	{
-		 		rt_printf("size of logMsg = %d\n", sizeof(rxCan1Msg));
+		 		rt_printf("size of logMsg = %d canID = %04x \n", sizeof(rxCan1Msg),rxCan1Msg.can_id);
 		 	}
-		 	if(rxCan1Msg.can_id == 215)
+		 	if(rxCan1Msg.can_id == 0x215)
 		 	{
-		 		UINT32 velocity = rxCan1Msg.data[0] + rxCan1Msg.data[1]*256;
+		 		/* Now, wait for a semaphore unit... */
+       			rt_sem_p(&sem_desc,TM_INFINITE);
+		 		velocity = rxCan1Msg.data[0] | rxCan1Msg.data[0]<<8;
+		 		/* then release it. */
+        		rt_sem_v(&sem_desc);
+
 		 		velocity = velocity * 0.0078125;
-		 		rt_printf("velocity = %f",velocity);
+		 		rt_printf("data0: %d data1: %02x velocity = %lf",rxCan1Msg.data[0],rxCan1Msg.data[1],velocity);
 		 		
 		 	}
+
+		 		
 			//retval = rt_queue_write(rtcan1BufferPrt,&rxCan1Msg,sizeof(rxCan1Msg),Q_NORMAL);
 
 			if (retval < 0 ) {
@@ -360,6 +376,17 @@ static void rtcan1MsgRecv_func(void *arg)
 	 }
 
 
+}
+int getVelocity()
+{
+	double ret=0;
+	/* Now, wait for a semaphore unit... */
+    rt_sem_p(&sem_desc,TM_INFINITE);
+    ret = velocity;
+    /* then release it. */
+    rt_sem_v(&sem_desc);
+
+    return ret;
 }
 
 
@@ -467,7 +494,8 @@ enum responseCodes canfr_canrecvStart(busInterface itfName)
 	struct ifreq ifr;
 	itfName = itfName & 3;
 	//nanosecs_abs_t timestamp = 0;
-
+	int err;
+	err = rt_sem_create(&sem_desc,"MySemaphore",SEM_INIT,SEM_MODE);
 
 	switch(itfName)
 	{
