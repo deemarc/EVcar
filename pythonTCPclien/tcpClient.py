@@ -9,7 +9,7 @@ MESSAGE = "Hello, World!"
 
 
 count = 0
-while (count < 10):
+while (count < 1000):
     count = count + 1
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.connect((TCP_IP, TCP_PORT))
@@ -17,7 +17,7 @@ while (count < 10):
     data = s.recv(BUFFER_SIZE)
     s.close()
     print "received data:", data
-    time.sleep(5) # delays for 5 seconds
+    time.sleep(1) # delays for 5 seconds
 
 
 print "Good bye!"

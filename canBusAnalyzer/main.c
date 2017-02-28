@@ -54,6 +54,7 @@ int tcpserver()
 	struct sockaddr_in server, client;
 	unsigned char buf[MAX_RX_BUFFER_SIZE];
 	double velocity;
+	float batArr[4];
 	//struct hostent *hostp; /* client host info */
 	//canfrControlFrameStruct_t currentCtrl;
 	//enum responseCodes responseCode;
@@ -96,14 +97,15 @@ int tcpserver()
 		/* 
 	     * read: read input string from the client
 	     */
-		rt_printf("get command!!");
+		//rt_printf("get command!!");
 	    bzero(buf, MAX_RX_BUFFER_SIZE);
 	    int rNum = read(client_fd, buf, MAX_RX_BUFFER_SIZE);
 	    if (rNum < 0) 
 	      error("ERROR reading from socket");
 
 	  	velocity = getVelocity();
-	  	snprintf(buf, MAX_RX_BUFFER_SIZE, "velocity = %lf",velocity);
+	  	getBattery(batArr);
+	  	snprintf(buf, MAX_RX_BUFFER_SIZE, "velocity = %4.2lf bat1 %4.2f, bat2 %4.2f, bat3 %4.2f, bat4 %4.2f",velocity,batArr[0],batArr[1],batArr[2],batArr[3]);
 	     /* 
 	     * write: echo the input string back to the client 
 	     */
@@ -112,7 +114,7 @@ int tcpserver()
 	      error("ERROR writing to socket");
 
 	    close(client_fd);
-	    rt_printf("finnish command");
+	    //rt_printf("finnish command");
 	}
 	
 
@@ -143,10 +145,11 @@ int main(void)
 	rt_task_shadow(&task1, "Task 1", 10, 0);
 	rt_timer_set_mode(0);
 	canfr_canSetBit(ITF_RTCAN0,500000);
-	canfr_canSetBit(ITF_RTCAN1,125000);
-	canfr_canActivate(ITF_RTCANALL,0);
+	//canfr_canSetBit(ITF_RTCAN1,125000);
+	canfr_canActivate(ITF_RTCAN0,0);
+	//canfr_canActivate(ITF_RTCAN1,0);
 	canfr_canrecvResetClock();
-	canfr_canrecvStart(ITF_RTCANALL);
+	canfr_canrecvStart(ITF_RTCAN0);
 	tcpserver();
 
 	return 0;
